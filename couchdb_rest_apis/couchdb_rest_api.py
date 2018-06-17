@@ -3,7 +3,7 @@
 """
 CouchDB REST APIs
 """
-
+import json
 from http import HTTPStatus
 from magen_rest_apis.rest_client_apis import RestClientApis
 
@@ -12,7 +12,9 @@ __author__ = "rapenno@gmail.com"
 __copyright__ = "Copyright(c) 2018, Cisco Systems, Inc."
 __version__ = "0.1"
 __status__ = "alpha"
-__license__ = "BSD"
+__license__ = "Apache"
+
+# TODO Replace print by logs
 
 
 def create_db(url, db_name, overwrite=False):
@@ -46,21 +48,37 @@ def delete_db(url, db_name):
         return -1
 
 
-def create_named_document(url, db_name, doc_name, document):
+def create_named_document(url, db_name, doc_name, document, overwrite=False):
     """
 
+    :param overwrite: Should we create a new revision if doc exists?
     :param url: couchDB base URL in format http://host:port/
     :param db_name:name of db
     :param doc_name: document name
     :param document: document as a json string
-    :return: boolean
+    :return: Json body as dict or None
     """
     doc_url = url + db_name + "/" + doc_name
+    if overwrite:
+        get_resp = RestClientApis.http_get_and_check_success(doc_url, document)
+        if get_resp.http_status == HTTPStatus.OK:
+            rev = get_resp.json_body["_rev"]
+            doc_dict = json.loads(document)
+            doc_dict["_rev"] = rev
+            document = json.dumps(document)
+        elif get_resp.http_status == HTTPStatus.NOT_FOUND:
+            print("Overwrite requested but document does not exist \n")
+        elif get_resp.http_status == HTTPStatus.UNAUTHORIZED:
+            print("Overwrite requested but not enough permissions \n")
+            return None
+        else:
+            print("Unknown error, HTTP Code {}".format(get_resp.http_status))
+            return None
     put_resp = RestClientApis.http_put_and_check_success(doc_url, document)
     if put_resp.http_status == HTTPStatus.CREATED:
-        return 0
+        return put_resp.json_body
     else:
-        return -1
+        return None
 
 
 def get_named_document(url, db_name, doc_name):
@@ -77,4 +95,5 @@ def get_named_document(url, db_name, doc_name):
         return get_resp.json_body
     else:
         return None
+
 
