@@ -3,7 +3,6 @@
 """
 CouchDB REST APIs
 """
-import json
 from http import HTTPStatus
 from magen_rest_apis.rest_client_apis import RestClientApis
 
@@ -60,12 +59,11 @@ def create_named_document(url, db_name, doc_name, document, overwrite=False):
     """
     doc_url = url + db_name + "/" + doc_name
     if overwrite:
-        get_resp = RestClientApis.http_get_and_check_success(doc_url, document)
+        get_resp = RestClientApis.http_get_and_check_success(doc_url)
         if get_resp.http_status == HTTPStatus.OK:
             rev = get_resp.json_body["_rev"]
-            doc_dict = json.loads(document)
-            doc_dict["_rev"] = rev
-            document = json.dumps(document)
+            rev_json = '"_rev":"{}",'.format(rev)
+            document = document.replace('{', '{' + rev_json, 1)
         elif get_resp.http_status == HTTPStatus.NOT_FOUND:
             print("Overwrite requested but document does not exist \n")
         elif get_resp.http_status == HTTPStatus.UNAUTHORIZED:
@@ -87,7 +85,7 @@ def get_named_document(url, db_name, doc_name):
     :param url: couchDB base URL in format http://host:port/
     :param db_name:name of db
     :param doc_name: document name
-    :return: document or None
+    :return: document as json dict or None
     """
     doc_url = url + db_name + "/" + doc_name
     get_resp = RestClientApis.http_get_and_check_success(doc_url)

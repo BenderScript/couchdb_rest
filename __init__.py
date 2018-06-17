@@ -1,3 +1,3 @@
 # coding=utf-8
 """Init for CouchDB """
-__version__ = '0.4'
+__version__ = '0.5'
