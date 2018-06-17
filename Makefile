@@ -49,6 +49,4 @@ pre_test: common_pre_test
 
 coverage_report: common_coverage_report
 
-run: common_run
-
 .PHONY:  pre_test coverage_report all build_docker

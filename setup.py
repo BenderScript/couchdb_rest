@@ -16,6 +16,8 @@ if pip_version < 901:
 setup(
     name='couchdb_rest_api',
     version=__version__,
+    description='CouchDB REST API',
+    long_description='Wrapper around the couchdb REST API',
     install_requires=[
         'coverage>=4.5.1',
         'flake8>=3.3.0',
@@ -28,8 +30,8 @@ setup(
         'magen_utils>=1.2a2',
         'magen_rest_service>=1.3a10'
       ],
-    package_dir={'': '..'},
-    packages={'couchdb_rest.couchdb_rest_apis'},
+    package_dir={'': '.'},
+    packages={'couchdb_rest_apis'},
     include_package_data=True,
     package_data={
         # If any package contains *.txt or *.rst files, include them:
@@ -40,7 +42,6 @@ setup(
     license='Apache Software License',
     author='Reinaldo Penno',
     author_email='rapenno@gmail.com',
-    description='Couchdb REST API Wrapper',
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
