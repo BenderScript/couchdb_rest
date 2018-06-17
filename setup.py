@@ -20,6 +20,7 @@ setup(
     long_description='Wrapper around the couchdb REST API',
     install_requires=[
         'coverage>=4.5.1',
+        'docker>=3.3.0',
         'flake8>=3.3.0',
         'pymongo>=3.4.0',
         'pytest>=3.4.0',
@@ -31,7 +32,7 @@ setup(
         'magen_rest_service>=1.3a10'
       ],
     package_dir={'': '.'},
-    packages={'couchdb_rest_apis'},
+    packages={'couchdb_rest_apis', 'couchdb_docker_apis'},
     include_package_data=True,
     package_data={
         # If any package contains *.txt or *.rst files, include them:
