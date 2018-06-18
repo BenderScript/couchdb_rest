@@ -10,6 +10,7 @@ MAKE=make
 PYTEST=pytest
 OS := $(shell uname)
 PIP := pip3
+export DB_TYPE=COUCHDB
 
 MAGEN_HELPER=./lib/magen_helper
 

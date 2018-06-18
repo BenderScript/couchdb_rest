@@ -95,3 +95,29 @@ def get_named_document(url, db_name, doc_name):
         return None
 
 
+def delete_named_document(url, db_name, doc_name):
+    """
+    Delete the named document
+    :param url: couchDB base URL in format http://host:port/
+    :param db_name:name of db
+    :param doc_name: document name
+    :return: delete result or None
+    """
+    doc_url = url + db_name + "/" + doc_name
+    get_resp = RestClientApis.http_get_and_check_success(doc_url)
+    if get_resp.http_status == HTTPStatus.OK:
+        rev = get_resp.json_body["_rev"]
+        doc_url = doc_url + "?rev=" + rev
+    elif get_resp.http_status == HTTPStatus.UNAUTHORIZED:
+        print("Delete requested but not enough permissions \n")
+        return None
+    else:
+        print("Unknown error, HTTP Code {}".format(get_resp.http_status))
+        return None
+    del_resp = RestClientApis.http_delete_and_check_success(doc_url)
+    if del_resp.http_status == HTTPStatus.OK:
+        return del_resp.json_body
+    else:
+        return None
+
+

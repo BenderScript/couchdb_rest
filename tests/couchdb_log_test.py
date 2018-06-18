@@ -6,7 +6,8 @@ import json
 import unittest
 
 from couchdb_docker_apis.couchdb_docker_api import run_couchdb_docker_container
-from couchdb_rest_apis.couchdb_rest_api import create_db, delete_db, create_named_document, get_named_document
+from couchdb_rest_apis.couchdb_rest_api import create_db, delete_db, create_named_document, get_named_document, \
+    delete_named_document
 from json import JSONDecodeError
 
 from tests.appg_env import current_path
@@ -113,6 +114,9 @@ class RedisLogTest(unittest.TestCase):
             ret = create_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name,
                                         json.dumps(nw_map, cls=SetEncoder))
             self.assertIsInstance(ret, dict)
+            ret = delete_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name)
+            self.assertIsInstance(ret, dict)
+
 
     def test_build_network_map_and_overwrite(self):
         """
