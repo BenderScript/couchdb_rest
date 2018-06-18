@@ -1,9 +1,12 @@
 # .coveragerc to control coverage.py
 [run]
 branch = True
-source = ./couchdb_rest_api
+source = ./couchdb_rest_apis
 omit =
     tests/*
+    build/*
+    dist/*
+    lib/*
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -24,7 +27,7 @@ exclude_lines =
     if __name__ == .__main__.:
 
 show_missing = True
-fail_under = 85
+fail_under = 50
 
 ignore_errors = True
 
