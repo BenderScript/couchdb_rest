@@ -1,9 +1,12 @@
 #! /usr/bin/env python3
 import sys
+import time
 
 import docker
 import json
 import unittest
+import uuid
+from http import HTTPStatus
 
 from couchdb_docker_apis.couchdb_docker_api import run_couchdb_docker_container
 from couchdb_rest_apis.couchdb_rest_api import create_db, delete_db, create_named_document, get_named_document, \
@@ -156,6 +159,58 @@ class RedisLogTest(unittest.TestCase):
             json_dict = get_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name)
             self.assertEqual(json_dict["graph"]["verified"], dict(), "Document overwrite failed")
 
+    def test_build_mixed_network_map_v2(self):
+        """
+        We test that we can parse redis logs and create a network map
+        that consists of ip -> (dest1, dest2, ...).
 
+        These logs have source/app_name and destination/app_name
+        :return:
+        """
+        nw_map = dict()
+        nw_map["graph"] = dict()
+        nw_map["graph"]["verified"] = dict()
+        nw_map["graph"]["unverified"] = dict()
+        nw_map["graph"]["threats"] = dict()
+        with open(current_path + "/mixed_log_entries.txt") as fp:
+            log_line = fp.readline()
+            while log_line:
+                try:
+                    log_json = json.loads(log_line)
+                    if isinstance(log_json, str):
+                        json_dict = json.loads(log_json)
+                        self.assertTrue(isinstance(json_dict, dict))
+                        if "source" and "destination" in json_dict:
+                            if json_dict["responseCode"] == HTTPStatus.FORBIDDEN:
+                                try:
+                                    nw_map["graph"]["threats"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["threats"][json_dict["source"]] = {json_dict["destination"]}
+                            elif json_dict["source/app_name"] == json_dict["destination/app_name"] or \
+                                    (json_dict["source/app_name"] == "unknown" and
+                                     json_dict["destination/app_name"].split(".")[0] == "istio-ingress"):
+                                try:
+                                    nw_map["graph"]["verified"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["verified"][json_dict["source"]] = {json_dict["destination"]}
+
+                            else:
+                                try:
+                                    nw_map["graph"]["unverified"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["unverified"][json_dict["source"]] = {json_dict["destination"]}
+                            log_line = fp.readline()
+                            continue
+                    print("Malformed log: {}".format(log_json))
+                    self.assertTrue(False)
+                except JSONDecodeError:
+                    self.assertTrue(False)
+            nw_map["graph"]["uuid"] = str(uuid.uuid4())
+            nw_map["graph"]["time"] = time.asctime(time.localtime())
+            ret = create_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name,
+                                        json.dumps(nw_map, cls=SetEncoder))
+            self.assertIsInstance(ret, dict)
+            ret = delete_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name)
+            self.assertIsInstance(ret, dict)
 
 
