@@ -30,6 +30,7 @@ def create_db(url, db_name, overwrite=False):
     if put_resp.http_status == HTTPStatus.CREATED:
         return 0
     else:
+        print("Failed to create DB {}".format(url + db_name))
         return -1
 
 
@@ -44,10 +45,11 @@ def delete_db(url, db_name):
     if del_resp.success:
         return 0
     else:
+        print("Failed to delete DB {}".format(url + db_name))
         return -1
 
 
-def create_named_document(url, db_name, doc_name, document, overwrite=False):
+def create_named_document(url: str, db_name: str, doc_name: str, document: str, overwrite=False) -> dict or None:
     """
 
     :param overwrite: Should we create a new revision if doc exists?
@@ -70,16 +72,19 @@ def create_named_document(url, db_name, doc_name, document, overwrite=False):
             print("Overwrite requested but not enough permissions \n")
             return None
         else:
-            print("Unknown error, HTTP Code {}".format(get_resp.http_status))
+            print("Error reading doc_id {}. HTTP Code {}".
+                  format(doc_url, get_resp.http_status))
             return None
     put_resp = RestClientApis.http_put_and_check_success(doc_url, document)
     if put_resp.http_status == HTTPStatus.CREATED:
         return put_resp.json_body
     else:
+        print("Failed to save doc_id {}, doc {}. HTTP Code: {}".
+              format(doc_url, document, put_resp.http_status))
         return None
 
 
-def get_named_document(url, db_name, doc_name):
+def get_named_document(url: str, db_name: str, doc_name: str) -> dict or None:
     """
     Retrieve the named document
     :param url: couchDB base URL in format http://host:port/
@@ -92,10 +97,12 @@ def get_named_document(url, db_name, doc_name):
     if get_resp.http_status == HTTPStatus.OK:
         return get_resp.json_body
     else:
+        print("Failed to read doc_id {}. HTTP Code: {}".
+              format(doc_url, get_resp.http_status))
         return None
 
 
-def delete_named_document(url, db_name, doc_name):
+def delete_named_document(url: str, db_name: str, doc_name: str) -> dict or None:
     """
     Delete the named document
     :param url: couchDB base URL in format http://host:port/
@@ -112,12 +119,15 @@ def delete_named_document(url, db_name, doc_name):
         print("Delete requested but not enough permissions \n")
         return None
     else:
-        print("Unknown error, HTTP Code {}".format(get_resp.http_status))
+        print("Error reading doc_id {}. HTTP Code {}".
+              format(doc_url, get_resp.http_status))
         return None
     del_resp = RestClientApis.http_delete_and_check_success(doc_url)
     if del_resp.http_status == HTTPStatus.OK:
         return del_resp.json_body
     else:
+        print("Error deleting doc_id {}. HTTP Code {}".
+              format(doc_url, get_resp.http_status))
         return None
 
 

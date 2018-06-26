@@ -30,10 +30,15 @@ class SetEncoder(json.JSONEncoder):
 
 
 class SetDecoder(json.JSONDecoder):
-    def default(self, obj):
-        if isinstance(obj, list):
-            return set(obj)
-        return json.JSONDecoder.decode(self, obj)
+
+    def __init__(self):
+        json.JSONDecoder.__init__(self, object_hook=self.dict_to_object)
+
+    def dict_to_object(self, d):
+        for key, value in d.items():
+            if isinstance(value, list):
+                d[key] = set(value)
+        return d
 
 
 class RedisLogTest(unittest.TestCase):
@@ -214,3 +219,54 @@ class RedisLogTest(unittest.TestCase):
             self.assertIsInstance(ret, dict)
 
 
+    def test_set_encoder_decoder(self):
+        """
+        We test that we can parse redis logs and create a network map
+        that consists of ip -> (dest1, dest2, ...).
+
+        These logs have source/app_name and destination/app_name
+        :return:
+        """
+        nw_map = dict()
+        nw_map["graph"] = dict()
+        nw_map["graph"]["verified"] = dict()
+        nw_map["graph"]["unverified"] = dict()
+        nw_map["graph"]["threats"] = dict()
+        with open(current_path + "/mixed_log_entries.txt") as fp:
+            log_line = fp.readline()
+            while log_line:
+                try:
+                    log_json = json.loads(log_line)
+                    if isinstance(log_json, str):
+                        json_dict = json.loads(log_json)
+                        self.assertTrue(isinstance(json_dict, dict))
+                        if "source" and "destination" in json_dict:
+                            if json_dict["responseCode"] == HTTPStatus.FORBIDDEN:
+                                try:
+                                    nw_map["graph"]["threats"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["threats"][json_dict["source"]] = {json_dict["destination"]}
+                            elif json_dict["source/app_name"] == json_dict["destination/app_name"] or \
+                                    (json_dict["source/app_name"] == "unknown" and
+                                     json_dict["destination/app_name"].split(".")[0] == "istio-ingress"):
+                                try:
+                                    nw_map["graph"]["verified"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["verified"][json_dict["source"]] = {json_dict["destination"]}
+
+                            else:
+                                try:
+                                    nw_map["graph"]["unverified"][json_dict["source"]].add(json_dict["destination"])
+                                except KeyError:
+                                    nw_map["graph"]["unverified"][json_dict["source"]] = {json_dict["destination"]}
+                            log_line = fp.readline()
+                            continue
+                    print("Malformed log: {}".format(log_json))
+                    self.assertTrue(False)
+                except JSONDecodeError:
+                    self.assertTrue(False)
+            nw_map["graph"]["uuid"] = str(uuid.uuid4())
+            nw_map["graph"]["time"] = time.asctime(time.localtime())
+            nw_map_json = json.dumps(nw_map, cls=SetEncoder)
+            nw_map_decoded = json.loads(nw_map_json, cls=SetDecoder)
+            print(nw_map_decoded)
