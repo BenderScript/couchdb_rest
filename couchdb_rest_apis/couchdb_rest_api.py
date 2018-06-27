@@ -20,7 +20,7 @@ __license__ = "Apache"
 
 def create_db(url, db_name, overwrite=False):
     """
-    Creates a DB in couchDB
+    Creates a DB in couchDB. We return success if db was created or already exists.
     :param overwrite: whether to overwrite db if it exists
     :param url: couchDB base URL in format http://host:port/
     :param db_name:  name of db to be created
@@ -29,7 +29,8 @@ def create_db(url, db_name, overwrite=False):
     if overwrite:
         delete_db(url, db_name)
     put_resp = RestClientApis.http_put_and_check_success(url + db_name, "{}")
-    if put_resp.http_status == HTTPStatus.CREATED:
+    if put_resp.http_status == HTTPStatus.CREATED or \
+            put_resp.http_status == HTTPStatus.PRECONDITION_FAILED:
         return 0
     else:
         print("Failed to create DB {}".format(url + db_name))
