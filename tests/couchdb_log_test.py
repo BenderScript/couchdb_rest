@@ -125,7 +125,6 @@ class RedisLogTest(unittest.TestCase):
             ret = delete_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name)
             self.assertIsInstance(ret, dict)
 
-
     def test_build_network_map_and_overwrite(self):
         """
         We test that we can parse redis logs, create a network map and overwrite it
@@ -217,7 +216,6 @@ class RedisLogTest(unittest.TestCase):
             self.assertIsInstance(ret, dict)
             ret = delete_named_document(type(self).couch_url, type(self).db_name, type(self).doc_name)
             self.assertIsInstance(ret, dict)
-
 
     def test_set_encoder_decoder(self):
         """

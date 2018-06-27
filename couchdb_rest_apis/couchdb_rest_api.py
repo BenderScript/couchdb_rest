@@ -3,9 +3,11 @@
 """
 CouchDB REST APIs
 """
+import json
 from http import HTTPStatus
+from json import JSONDecodeError
 from magen_rest_apis.rest_client_apis import RestClientApis
-
+from requests.exceptions import ChunkedEncodingError
 
 __author__ = "rapenno@gmail.com"
 __copyright__ = "Copyright(c) 2018, Cisco Systems, Inc."
@@ -67,6 +69,7 @@ def create_named_document(url: str, db_name: str, doc_name: str, document: str, 
             rev_json = '"_rev":"{}",'.format(rev)
             document = document.replace('{', '{' + rev_json, 1)
         elif get_resp.http_status == HTTPStatus.NOT_FOUND:
+            # If document does not exist we continue and add it
             print("Overwrite requested but document does not exist \n")
         elif get_resp.http_status == HTTPStatus.UNAUTHORIZED:
             print("Overwrite requested but not enough permissions \n")
@@ -100,6 +103,55 @@ def get_named_document(url: str, db_name: str, doc_name: str) -> dict or None:
         print("Failed to read doc_id {}. HTTP Code: {}".
               format(doc_url, get_resp.http_status))
         return None
+
+
+def get_db_all_docs(url: str, db_name: str) -> list or None:
+    """
+    Retrieve all docs for a DB. CouchDB returns list of documents as
+    chunked-encoding, therefore special reassembly is needed
+    :param url: CouchDB URL
+    :param db_name: DB name
+    :return: A list of JSON dicts objects
+    """
+
+    # Make static analysis happy
+    buf = None
+    try:
+        json_dict_list = list()
+        all_docs = url + db_name + "/" + "_all_docs"
+        get_resp = RestClientApis.http_get_and_check_success(all_docs)
+        headers = get_resp.response_object.headers
+        if ("Transfer-Encoding", "chunked") in headers.items():
+            for buf in read_chunks(get_resp.response_object):
+                json_dict = json.loads(buf)
+                json_dict_list.append(json_dict)
+            return json_dict_list
+        else:
+            return None
+    except JSONDecodeError:
+        error_msg = "Error decoding response {}".format(buf)
+        print(error_msg)
+        return None
+
+
+def read_chunks(resp) -> str:
+    """
+    We iterate over chunks, reassemble and return them.
+    :param resp: A requests response object
+    :return: decoded chunk
+    """
+    buf = ""
+    try:
+        for chunk in resp.iter_content(chunk_size=None):
+            if chunk.endswith(b"\n"):
+                buf += chunk.decode("utf-8")
+                yield buf
+                buf = ""
+            else:
+                buf += chunk
+    except ChunkedEncodingError as e:
+        # Nothing to do, connection terminated.
+        pass
 
 
 def delete_named_document(url: str, db_name: str, doc_name: str) -> dict or None:
